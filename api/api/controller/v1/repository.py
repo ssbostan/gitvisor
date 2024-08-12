@@ -20,7 +20,7 @@ class RepositoryController:
 
     def get_repository(repository_id):
         try:
-            repository = Repository.query.get(repository_id)
+            repository = db.session.get(Repository, repository_id)
         except:
             return jsonify(status=500, code=102)
         if repository is None:
@@ -58,7 +58,7 @@ class RepositoryController:
 
     def update_repository(repository_id):
         try:
-            repository = Repository.query.get(repository_id)
+            repository = db.session.get(Repository, repository_id)
         except:
             return jsonify(status=500, code=102)
         if repository is None:
@@ -71,6 +71,10 @@ class RepositoryController:
             request_data = repository_schema.load(request.get_json())
         except:
             return jsonify(status=400, code=104)
+        if "status" not in request_data:
+            return jsonify(status=400, code=104)
+        if not request_data["status"]:
+            return jsonify(status=400, code=107)
         repository.status = request_data["status"]
         repository.last_update_at = now()
         try:
@@ -86,7 +90,7 @@ class RepositoryController:
 
     def delete_repository(repository_id):
         try:
-            repository = Repository.query.get(repository_id)
+            repository = db.session.get(Repository, repository_id)
         except:
             return jsonify(status=500, code=102)
         if repository is None:
