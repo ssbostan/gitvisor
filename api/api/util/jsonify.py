@@ -8,6 +8,7 @@ APP_CODES = {
     104: "Input validation error.",
     105: "Resource not found.",
     106: "Resource busy.",
+    107: "Empty data.",
 }
 
 
