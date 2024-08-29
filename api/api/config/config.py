@@ -10,7 +10,7 @@ class Config:
 
     SECRET_KEY = environ.get("GITVISOR_API_SECRET_KEY", "secretkey")
 
-    SQLALCHEMY_DATABASE_URI = environ.get("GITVISOR_API_DATABASE_URL", None)
+    SQLALCHEMY_DATABASE_URI = environ.get("GITVISOR_API_DATABASE_URI", None)
 
     SQLALCHEMY_ECHO = DEBUG
 
