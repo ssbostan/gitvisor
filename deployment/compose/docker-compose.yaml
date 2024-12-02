@@ -1,0 +1,81 @@
+version: "3"
+
+services:
+  gitvisor_api:
+    image: gitvisor-api:latest
+    build: ../../api
+    pull_policy: build
+    restart: unless-stopped
+    depends_on:
+      gitvisor_api_migration:
+        condition: service_completed_successfully
+      gitvisor_api_mysql:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - 8000:8000/tcp
+    networks:
+      - edge
+      - api_db
+    healthcheck:
+      test: ["CMD-SHELL", "kill -1 1"]
+      interval: 10s
+      timeout: 1s
+      retries: 2
+    labels:
+      - "io.kubedemy.app.name=api"
+      - "io.kubedemy.app.part-of=api"
+      - "io.kubedemy.app.project=gitvisor"
+      - "io.kubedemy.app.type=core"
+
+  gitvisor_api_migration:
+    image: gitvisor-api:latest
+    build: ../../api
+    pull_policy: build
+    restart: "no"
+    command: ["flask", "db", "upgrade"]
+    env_file:
+      - .env
+    depends_on:
+      gitvisor_api_mysql:
+        condition: service_healthy
+    networks:
+      - api_db
+    labels:
+      - "io.kubedemy.app.name=api"
+      - "io.kubedemy.app.part-of=api"
+      - "io.kubedemy.app.project=gitvisor"
+      - "io.kubedemy.app.type=job"
+
+  gitvisor_api_mysql:
+    image: mysql:8
+    pull_policy: always
+    restart: unless-stopped
+    env_file:
+      - .env
+    expose:
+      - 3306/tcp
+    volumes:
+      - gitvisor_api_mysql_data:/var/lib/mysql
+    networks:
+      - api_db
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 1s
+      retries: 2
+      start_period: 30s
+      start_interval: 2s
+    labels:
+      - "io.kubedemy.app.name=mysql"
+      - "io.kubedemy.app.part-of=api"
+      - "io.kubedemy.app.project=gitvisor"
+      - "io.kubedemy.app.type=job"
+
+networks:
+  edge:
+  api_db:
+
+volumes:
+  gitvisor_api_mysql_data:
