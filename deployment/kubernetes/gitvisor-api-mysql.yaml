@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitvisor-api-mysql-secret
+  labels:
+    app.k8s.io/name: gitvisor-api-mysql
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+stringData:
+  MYSQL_ROOT_PASSWORD: hardrootpassword
+  MYSQL_DATABASE: gitvisor_api
+  MYSQL_USER: gitvisor-api
+  MYSQL_PASSWORD: gitvisor-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitvisor-api-mysql
+  labels:
+    app.k8s.io/name: gitvisor-api-mysql
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app.k8s.io/name: gitvisor-api-mysql
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+  ports:
+    - name: mysql
+      port: 3306
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: gitvisor-api-mysql
+  labels:
+    app.k8s.io/name: gitvisor-api-mysql
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.k8s.io/name: gitvisor-api-mysql
+      app.k8s.io/part-of: gitvisor-api
+      app.k8s.io/project: gitvisor
+  serviceName: gitvisor-api-mysql
+  template:
+    metadata:
+      labels:
+        app.k8s.io/name: gitvisor-api-mysql
+        app.k8s.io/part-of: gitvisor-api
+        app.k8s.io/project: gitvisor
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8
+          envFrom:
+            - secretRef:
+                name: gitvisor-api-mysql-secret
+          volumeMounts:
+            - name: gitvisor-api-mysql-data
+              mountPath: /var/lib/mysql
+          ports:
+            - name: mysql
+              containerPort: 3306
+  volumeClaimTemplates:
+    - metadata:
+        name: gitvisor-api-mysql-data
+        labels:
+          app.k8s.io/name: gitvisor-api-mysql
+          app.k8s.io/part-of: gitvisor-api
+          app.k8s.io/project: gitvisor
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

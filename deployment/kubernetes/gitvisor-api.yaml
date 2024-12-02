@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitvisor-api-config
+  labels:
+    app.k8s.io/name: gitvisor-api
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+data:
+  GITVISOR_API_ENV: development
+  GITVISOR_API_DEBUG: "1"
+  GITVISOR_API_TESTING: "1"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitvisor-api-secret
+  labels:
+    app.k8s.io/name: gitvisor-api
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+stringData:
+  GITVISOR_API_SECRET_KEY: superhardsecret
+  GITVISOR_API_DATABASE_URI: "mysql+pymysql://gitvisor-api:gitvisor-api@gitvisor-api-mysql:3306/gitvisor_api"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitvisor-api
+  labels:
+    app.k8s.io/name: gitvisor-api
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+spec:
+  type: ClusterIP
+  selector:
+    app.k8s.io/name: gitvisor-api
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitvisor-api
+  labels:
+    app.k8s.io/name: gitvisor-api
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.k8s.io/name: gitvisor-api
+      app.k8s.io/part-of: gitvisor-api
+      app.k8s.io/project: gitvisor
+  template:
+    metadata:
+      labels:
+        app.k8s.io/name: gitvisor-api
+        app.k8s.io/part-of: gitvisor-api
+        app.k8s.io/project: gitvisor
+    spec:
+      containers:
+        - name: gitvisor-api
+          image: ssbostan/gitvisor-api:latest
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: gitvisor-api-config
+            - secretRef:
+                name: gitvisor-api-secret
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitvisor-api
+  labels:
+    app.k8s.io/name: gitvisor-api
+    app.k8s.io/part-of: gitvisor-api
+    app.k8s.io/project: gitvisor
+spec:
+  rules:
+    - host: gitvisor-api.20302040.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gitvisor-api
+                port:
+                  name: http
